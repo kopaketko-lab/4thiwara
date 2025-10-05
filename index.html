@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Electrochem Game v5 — เกมไฟฟ้าเคมีหลายเกม + เกมง่ายๆ</title>
+<style>
+:root{
+  --bg:#071028; --card:#091421; --accent:#7dd3fc; --muted:#9aa4b2; --good:#9ef6b7; --bad:#ff9b9b;
+}
+body{margin:0;font-family:"Segoe UI", Roboto, "Noto Sans Thai", sans-serif;background:var(--bg);color:#e6eef6;}
+.wrap{max-width:1150px;margin:18px auto;padding:18px;}
+header{display:flex;justify-content:space-between;align-items:center;}
+header h1{margin:0;font-size:1.5rem;}
+header p{margin:4px 0;color:var(--muted);}
+.top-badge{background:var(--accent);color:#022428;padding:4px 8px;border-radius:6px;font-weight:700;}
+nav{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;}
+nav button{background:var(--accent);color:#022428;border:0;padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:700;}
+.panel{background:var(--card);padding:16px;border-radius:10px;flex:1;box-shadow:0 8px 30px rgba(2,6,23,0.6);margin-top:10px;}
+.beaker{background:rgba(255,255,255,0.02);padding:12px;border-radius:8px;min-height:150px;position:relative;overflow:hidden;margin-bottom:12px;}
+.beaker h3{margin:4px 0;}
+.items{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+.item{padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:6px;cursor:grab;user-select:none;}
+.wire{position:relative;height:40px;margin-top:12px;display:flex;align-items:center;justify-content:center;}
+.wire .line{width:60%;height:6px;background:rgba(255,255,255,0.06);border-radius:4px;position:relative;}
+.electron{width:8px;height:8px;border-radius:50%;background:#fff;position:absolute;top:-1px;box-shadow:0 0 8px rgba(255,255,255,0.9);opacity:0.95;transform:translateX(-50%);}
+.led{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,0.03);margin-left:12px;box-shadow:0 0 6px rgba(0,0,0,0.6) inset;transition:0.3s;}
+.led.on{background: radial-gradient(circle at 30% 30%, #fff, #ffd36b 30%, #ffb84d 60%); box-shadow:0 0 18px rgba(255,200,90,0.8);}
+.led.multiple{margin-left:6px;}
+.bubble{width:6px;height:6px;border-radius:50%;background:#9ef6b7;position:absolute;bottom:0;opacity:0.6;}
+footer{text-align:center;color:var(--muted);margin-top:18px;}
+button,input[type=number]{padding:6px 8px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);}
+.score{margin-top:8px;font-weight:700;color:var(--good);}
+.hidden{display:none;}
+.choice-btn{background:var(--accent);color:#022428;border:0;padding:6px 8px;margin:4px;border-radius:6px;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Electrochem Game v5 — เว็บเกมไฟฟ้าเคมีหลายเกม + เกมง่ายๆ</h1>
+      <p>เลือกเกมเล่น สนุกและเรียนรู้เรื่องไฟฟ้าเคมี พร้อมคะแนนและ Level — จัดทำโดย <strong>ธีร์วรา ใต้ศรีโคตร</strong></p>
+    </div>
+    <div class="top-badge">วิชาเคมี ม.6</div>
+  </header>
+
+  <nav>
+    <button onclick="showGame('main')">เกมหลัก: เซลล์กัลวานิก</button>
+    <button onclick="showGame('match')">เกมจับคู่ไอออน</button>
+    <button onclick="showGame('speed')">เกมทายแรงดันเร็ว</button>
+    <button onclick="showGame('simple1')">เกมง่าย 1: จับคู่แรงดัน</button>
+    <button onclick="showGame('simple2')">เกมง่าย 2: เลือกไอออน</button>
+  </nav>
+
+  <!-- ================= Game Panels ================= -->
+  <div class="panel" id="mainGame">
+    <h3>Level <span id="levelNum">1</span></h3>
+    <h3>บีกเกอร์ A</h3>
+    <div class="beaker" id="beakerA"></div>
+    <h3>บีกเกอร์ B</h3>
+    <div class="beaker" id="beakerB"></div>
+
+    <h3>แผ่นและไอออน</h3>
+    <div class="items" id="pool"></div>
+
+    <div style="margin-top:10px;">
+      <button id="checkBtn">ทายแรงดัน (V)</button>
+      <input type="number" id="guessV" placeholder="ใส่ค่าแรงดัน">
+      <div id="result"></div>
+      <div class="score" id="score"></div>
+    </div>
+
+    <div class="wire">
+      <div class="line"></div>
+      <div class="electron" id="electron"></div>
+      <div class="led" id="led1"></div>
+      <div class="led" id="led2" class="led multiple"></div>
+    </div>
+  </div>
+
+  <div class="panel hidden" id="matchGame">
+    <h3>เกมจับคู่ไอออน</h3>
+    <p>ลากไอออนไปจับคู่กับโลหะที่ถูกต้อง!</p>
+    <div class="items" id="matchPool"></div>
+    <div class="items" id="matchTargets"></div>
+    <div id="matchResult"></div>
+  </div>
+
+  <div class="panel hidden" id="speedGame">
+    <h3>เกมทายแรงดันเร็ว</h3>
+    <p>ทายแรงดัน V ของเซลล์ภายในเวลา 10 วินาที!</p>
+    <div id="speedChallenge"></div>
+    <input type="number" id="speedGuess" placeholder="ใส่ค่าแรงดัน">
+    <button id="speedCheck">ตรวจคำตอบ</button>
+    <div id="speedResult"></div>
+  </div>
+
+  <div class="panel hidden" id="simpleGame1">
+    <h3>เกมง่าย 1: จับคู่แรงดันง่าย</h3>
+    <p>เลือกแรงดันที่ถูกต้องของเซลล์:</p>
+    <div id="simple1Question"></div>
+    <div id="simple1Choices"></div>
+    <div id="simple1Result"></div>
+  </div>
+
+  <div class="panel hidden" id="simpleGame2">
+    <h3>เกมง่าย 2: เลือกไอออนถูกต้อง</h3>
+    <p>เลือกไอออนที่ถูกต้องของโลหะ:</p>
+    <div id="simple2Question"></div>
+    <div id="simple2Choices"></div>
+    <div id="simple2Result"></div>
+  </div>
+
+  <footer>
+    จัดทำโดย <strong>ธีร์วรา ใต้ศรีโคตร</strong> — v5
+  </footer>
+</div>
+
+<script>
+// ===================== Navigation =====================
+function showGame(game){
+  const panels=['mainGame','matchGame','speedGame','simpleGame1','simpleGame2'];
+  panels.forEach(p=>document.getElementById(p).classList.add('hidden'));
+  if(game==='main') document.getElementById('mainGame').classList.remove('hidden');
+  if(game==='match') document.getElementById('matchGame').classList.remove('hidden');
+  if(game==='speed') document.getElementById('speedGame').classList.remove('hidden');
+  if(game==='simple1') document.getElementById('simpleGame1').classList.remove('hidden');
+  if(game==='simple2') document.getElementById('simpleGame2').classList.remove('hidden');
+}
+
+// ===================== Main Game =====================
+const levels=[
+  {pool:[{name:"Zn",val:2},{name:"Cu",val:2}],correctV:1.1},
+  {pool:[{name:"Fe",val:3},{name:"Ag",val:1}],correctV:0.8},
+  {pool:[{name:"Zn",val:2},{name:"Cu",val:2},{name:"Ag",val:1}],correctV:1.3}
+];
+let currentLevel=0;
+let score=0;
+const levelNum=document.getElementById('levelNum');
+const poolDiv=document.getElementById('pool');
+const beakerA=document.getElementById('beakerA');
+const beakerB=document.getElementById('beakerB');
+const electron=document.getElementById('electron');
+const led1=document.getElementById('led1');
+const led2=document.getElementById('led2');
+const resultDiv=document.getElementById('result');
+const scoreDiv=document.getElementById('score');
+
+function loadLevel(lvl){
+  levelNum.textContent=lvl+1;
+  poolDiv.innerHTML='';
+  beakerA.innerHTML=''; beakerB.innerHTML='';
+  electron.style.left='0';
+  led1.classList.remove('on'); led2.classList.remove('on');
+  resultDiv.innerHTML='';
+  levels[lvl].pool.forEach(el=>{
+    const div=document.createElement('div');
+    div.className='item'; div.draggable=true;
+    div.dataset.name=el.name; div.dataset.valence=el.val;
+    div.textContent=`${el.name} (${el.val})`;
+    poolDiv.appendChild(div);
+  });
+  setupDragDrop();
+}
+function setupDragDrop(){
+  poolDiv.querySelectorAll('.item').forEach(item=>{
+    item.addEventListener('dragstart',e=>{dragged=e.target;});
+  });
+}
+let dragged=null;
+[beakerA,beakerB].forEach(b=>{
+  b.addEventListener('dragover',e=>e.preventDefault());
+  b.addEventListener('drop',e=>{
+    if(dragged){b.appendChild(dragged); dragged=null;}
+  });
+});
+loadLevel(currentLevel);
+
+document.getElementById('checkBtn').addEventListener('click',()=>{
+  const guess=Number(document.getElementById('guessV').value);
+  const Aitems=beakerA.querySelectorAll('.item').length;
+  const Bitems=beakerB.querySelectorAll('.item').length;
+  if(!guess){resultDiv.innerHTML="<span style='color:var(--bad)'>กรุณาใส่ค่าแรงดัน</span>";return;}
+  if(Aitems && Bitems){
+    if(Math.abs(guess-levels[currentLevel].correctV)<0.2){
+      score+=10;
+      resultDiv.innerHTML=`<span style='color:var(--good)'>ถูกต้อง! แรงดัน ~${guess} V</span>`;
+    }else{
+      resultDiv.innerHTML=`<span style='color:var(--bad)'>ค่าแรงดันไม่ตรงกับจริง ~${levels[currentLevel].correctV} V</span>`;
+    }
+    scoreDiv.textContent=`คะแนน: ${score}`;
+    startElectronAnimation();
+    setTimeout(()=>{
+      currentLevel++;
+      if(currentLevel<levels.length){loadLevel(currentLevel);}
+      else{resultDiv.innerHTML+="<br>🎉 จบทุกด่าน!"; electron.style.left='0'; led1.classList.remove('on'); led2.classList.remove('on');}
+    },3000);
+  }else{
+    resultDiv.innerHTML="<span style='color:var(--bad)'>กรุณาใส่ไอออนในแต่ละบีกเกอร์ก่อน</span>";
+  }
+});
+function startElectronAnimation(){
+  led1.classList.add('on'); led2.classList.add('on');
+  let pos=0;
+  const interval=setInterval(()=>{
+    pos+=2;
+    if(pos>100){pos=0;}
+    electron.style.left=pos+'%';
+  },50);
+  createBubbles(beakerA); createBubbles(beakerB);
+}
+function createBubbles(beaker){
+  for(let i=0;i<5;i++){
+    const bubble=document.createElement('div'); bubble.className='bubble';
+    bubble.style.left=Math.random()*80+'%'; bubble.style.bottom='0px';
+    beaker.appendChild(bubble);
+    let up=Math.random()*150+50;
+    let interval=setInterval(()=>{
+      let bottom=parseFloat(bubble.style.bottom);
+      bottom+=2;
+      bubble.style.bottom=bottom+'px';
+      if(bottom>up){bubble.remove(); clearInterval(interval);}
+    },30);
+  }
+}
+
+// ===================== Match Game =====================
+const matchItems=[{name:"Zn",val:2},{name:"Cu",val:2},{name:"Fe",val:3},{name:"Ag",val:1}];
+const matchPoolDiv=document.getElementById('matchPool');
+const matchTargetsDiv=document.getElementById('matchTargets');
+const matchResultDiv=document.getElementById('matchResult');
+function loadMatchGame(){
+  matchPoolDiv.innerHTML=''; matchTargetsDiv.innerHTML=''; matchResultDiv.innerHTML='';
+  matchItems.forEach(el=>{
+    const div=document.createElement('div'); div.className='item'; div.draggable=true;
+    div.dataset.name=el.name; div.textContent=el.name; matchPoolDiv.appendChild(div);
+  });
+  matchItems.forEach(el=>{
+    const div=document.createElement('div'); div.className='item'; div.dataset.target=el.name;
+    div.textContent=`จับคู่กับ ${el.name}²⁺`; matchTargetsDiv.appendChild(div);
+  });
+  matchPoolDiv.querySelectorAll('.item').forEach(item=>{
+    item.addEventListener('dragstart',e=>{dragged=item;});
+  });
+  matchTargetsDiv.querySelectorAll('.item').forEach(target=>{
+    target.addEventListener('dragover',e=>e.preventDefault());
+    target.addEventListener('drop',e=>{
+      if(dragged){
+        if(dragged.dataset.name===target.dataset.target){
+          target.style.background='var(--good)'; dragged.remove(); matchResultDiv.innerHTML="✅ ถูกต้อง!";
+        }else{matchResultDiv.innerHTML="❌ ไม่ถูกต้อง"; dragged.style.background='var(--bad)'; setTimeout(()=>{dragged.style.background='';},500);}
+        dragged=null;
+      }
+    });
+  });
+}
+loadMatchGame();
+
+// ===================== Speed Game =====================
+const speedLevels=[
+  {name:"Zn/Cu",correctV:1.1},
+  {name:"Fe/Ag",correctV:0.8}
+];
+let speedCurrent=0;
+const speedChallenge=document.getElementById('speedChallenge');
+const speedResult=document.getElementById('speedResult');
+function loadSpeedGame(){
+  if(speedCurrent>=speedLevels.length){speedResult.innerHTML="🎉 จบเกมทายแรงดัน"; return;}
+  speedChallenge.innerHTML=`เซลล์: ${speedLevels[speedCurrent].name}`;
+  speedResult.innerHTML='';
+  document.getElementById('speedGuess').value='';
+}
+document.getElementById('speedCheck').addEventListener('click',()=>{
+  const guess=Number(document.getElementById('speedGuess').value);
+  if(Math.abs(guess-speedLevels[speedCurrent].correctV)<0.2){speedResult.innerHTML="✅ ถูกต้อง!";} 
+  else{speedResult.innerHTML=`❌ ไม่ถูกต้อง ~ ${speedLevels[speedCurrent].correctV} V`;}
+  speedCurrent++; loadSpeedGame();
+});
+loadSpeedGame();
+
+// ===================== Simple Game 1 =====================
+const simple1Levels=[
+  {cell:"Zn/Cu",options:[0.8,1.1,1.4],correct:1.1},
+  {cell:"Fe/Ag",options:[0.7,0.8,0.9],correct:0.8}
+];
+let simple1Current=0;
+function loadSimple1(){
+  if(simple1Current>=simple1Levels.length){document.getElementById('simple1Result').innerHTML="🎉 จบเกมง่าย 1"; return;}
+  const lvl=simple1Levels[simple1Current];
+  document.getElementById('simple1Question').textContent=`เซลล์: ${lvl.cell}`;
+  const divChoices=document.getElementById('simple1Choices');
+  divChoices.innerHTML='';
+  lvl.options.forEach(o=>{
+    const btn=document.createElement('button'); btn.className='choice-btn'; btn.textContent=o+' V';
+    btn.addEventListener('click',()=>{checkSimple1(o,lvl.correct);});
+    divChoices.appendChild(btn);
+  });
+}
+function checkSimple1(sel,correct){
+  const res=document.getElementById('simple1Result');
+  if(sel===correct){res.innerHTML="✅ ถูกต้อง!";} else{res.innerHTML=`❌ ไม่ถูกต้อง ~ ${correct} V`;}
+  simple1Current++; setTimeout(loadSimple1,1000);
+}
+loadSimple1();
+
+// ===================== Simple Game 2 =====================
+const simple2Levels=[
+  {metal:"Zn",options:["Zn²⁺","Cu²⁺","Ag⁺"],correct:"Zn²⁺"},
+  {metal:"Cu",options:["Cu²⁺","Ag⁺","Fe³⁺"],correct:"Cu²⁺"}
+];
+let simple2Current=0;
+function loadSimple2(){
+  if(simple2Current>=simple2Levels.length){document.getElementById('simple2Result').innerHTML="🎉 จบเกมง่าย 2"; return;}
+  const lvl=simple2Levels[simple2Current];
+  document.getElementById('simple2Question').textContent=`โลหะ: ${lvl.metal}`;
+  const divChoices=document.getElementById('simple2Choices'); divChoices.innerHTML='';
+  lvl.options.forEach(o=>{
+    const btn=document.createElement('button'); btn.className='choice-btn'; btn.textContent=o;
+    btn.addEventListener('click',()=>{checkSimple2(o,lvl.correct);});
+    divChoices.appendChild(btn);
+  });
+}
+function checkSimple2(sel,correct){
+  const res=document.getElementById('simple2Result');
+  if(sel===correct){res.innerHTML="✅ ถูกต้อง!";} else{res.innerHTML=`❌ ไม่ถูกต้อง ~ ${correct}`;}
+  simple2Current++; setTimeout(loadSimple2,1000);
+}
+loadSimple2();
+</script>
+</body>
+</html>
